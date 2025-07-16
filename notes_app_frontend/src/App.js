@@ -1,47 +1,108 @@
-import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
+import React, { useState } from 'react';
+import {
+  Container,
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  TextField,
+  Box,
+  Fab,
+} from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
+import NoteList from './components/NoteList';
+import NoteEditor from './components/NoteEditor';
+import { getAllNotes, addNote, updateNote, deleteNote, searchNotes } from './utils/notesUtils';
 import './App.css';
 
-// PUBLIC_INTERFACE
 function App() {
-  const [theme, setTheme] = useState('light');
+  const [notes, setNotes] = useState(getAllNotes());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState(null);
 
-  // Effect to apply theme to document element
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+  const handleSearch = (event) => {
+    const query = event.target.value;
+    setSearchQuery(query);
+    setNotes(query ? searchNotes(query) : getAllNotes());
+  };
 
-  // PUBLIC_INTERFACE
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+  const handleAddNote = () => {
+    setEditingNote(null);
+    setEditorOpen(true);
+  };
+
+  const handleEditNote = (note) => {
+    setEditingNote(note);
+    setEditorOpen(true);
+  };
+
+  const handleSaveNote = (title, content) => {
+    if (editingNote) {
+      updateNote(editingNote.id, title, content);
+    } else {
+      addNote(title, content);
+    }
+    setNotes(getAllNotes());
+  };
+
+  const handleDeleteNote = (noteId) => {
+    deleteNote(noteId);
+    setNotes(getAllNotes());
   };
 
   return (
     <div className="App">
-      <header className="App-header">
-        <button 
-          className="theme-toggle" 
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+      <AppBar position="static" sx={{ backgroundColor: '#1976d2' }}>
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Notes App
+          </Typography>
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="md" sx={{ mt: 4 }}>
+        <Box sx={{ mb: 4 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search notes..."
+            value={searchQuery}
+            onChange={handleSearch}
+            sx={{ backgroundColor: 'white' }}
+          />
+        </Box>
+
+        <NoteList
+          notes={notes}
+          onEditNote={handleEditNote}
+          onDeleteNote={handleDeleteNote}
+        />
+
+        <Fab
+          color="primary"
+          aria-label="add"
+          onClick={handleAddNote}
+          sx={{
+            position: 'fixed',
+            bottom: 16,
+            right: 16,
+            backgroundColor: '#ff7043',
+            '&:hover': {
+              backgroundColor: '#f4511e',
+            },
+          }}
         >
-          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-        </button>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <p>
-          Current theme: <strong>{theme}</strong>
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+          <AddIcon />
+        </Fab>
+
+        <NoteEditor
+          open={editorOpen}
+          onClose={() => setEditorOpen(false)}
+          onSave={handleSaveNote}
+          initialNote={editingNote}
+        />
+      </Container>
     </div>
   );
 }
